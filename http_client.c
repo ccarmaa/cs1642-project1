@@ -111,8 +111,7 @@ int main(int argc, char **argv)
         replaced buf with req_str and len with strlen(req_str) from above
     */
 
-    printf("REQ STRING: ");
-    printf("%s", req_str);
+    // printf("%s", req_str);
     int len = strlen(req_str);
     int res;
     if ((res = send(s, req_str, len, 0)) <= 0)
@@ -165,7 +164,7 @@ int main(int argc, char **argv)
             recv() ret # of bytes on return, 0 if conn closed, -1 on error
             args are (int sockfd, void *buf, size_t len, int flags);
         */
-        res = recv(s, buf, sizeof(buf) - 1, 0);
+        res = recv(s, buf, BUFSIZE - 1, 0);
 
         /* Hint: use recv() instead of read() */
         /* examine return code */
@@ -197,11 +196,12 @@ int main(int argc, char **argv)
 
     /* print first part of response: header, error code, etc. */
     int status_code = 0;
-    sscanf(headers, "HTTP/%*s %d", &status_code);
+    sscanf(headers, "HTTP/%*s %d", &status_code); // discards version & stores status code in status code
     printf("Status Code: %d\n\n", status_code);
     printf("%s\n", headers);
 
     /* second read loop -- print out the rest of the response: real web content */
+    // kinda just redo and print actually web content
     while ((res = recv(s, buf, BUFSIZE - 1, 0)) > 0)
     {
         buf[res] = '\0';
