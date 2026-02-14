@@ -149,6 +149,10 @@ main(int argc, char ** argv)
     if (body_start == NULL) {
         fprintf(stderr, "http_client: invalid HTTP response - no header delimiter\n");
         close(s);
+
+        free(req_str);
+        req_str = NULL;
+
         return -1;
     }
     *body_start = '\0'; // null-terminate end of headers
@@ -173,10 +177,18 @@ main(int argc, char ** argv)
         if (res < 0) {
             perror("http_client: recv error");
             close(s);
+
+            free(req_str);
+            req_str = NULL;
+
             return -1;
         }
 
         close(s);
+
+        free(req_str);
+        req_str = NULL;
+
         return 0;
     }
     else { // error
@@ -192,6 +204,10 @@ main(int argc, char ** argv)
         }
 
         close(s);
+
+        free(req_str);
+        req_str = NULL;
+
         return -1;
     }
 
