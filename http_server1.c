@@ -210,7 +210,11 @@ main(int argc, char ** argv)
         /* handle connections */
         ret = handle_connection(c);
 
-		//(void)ret; // DELETE ME
+		if(ret <0){
+            printf("http_server1: error handling connection\n");
+        }
+        
+
         close(c);
     }
 

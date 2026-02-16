@@ -274,6 +274,10 @@ main(int argc, char ** argv)
                 printf("Handling connection: %d\n", conn);
                 ret = handle_connection(conn);
 
+                if(ret <0){
+                    printf("http_server2: error handling connection\n");
+        }
+
                 close(conn);
                 FD_CLR(conn, &all_fds); // remove from set
                 connections[i] = -1; // mark as empty
