@@ -1,4 +1,19 @@
 # CS 1652: Project 1
+Cameron Frencho & Bridget Brinkman
+
+test env hardware: x86_64
+os: Ubuntu 24.04 LTS VM
+(we just tested on the Ubuntu cs1652 vm)
+
+
+
+
+
+
+ignore anything below. its just the proj instructions.
+---
+
+
 
 ## Overview
 
