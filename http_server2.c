@@ -202,7 +202,7 @@ main(int argc, char ** argv)
     fd_set read_fds, all_fds;
 
     // initialize connections array to -1 (aka empty)
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < FD_SETSIZE; i++) {
         connections[i] = -1;
     }
 
@@ -243,7 +243,8 @@ main(int argc, char ** argv)
 
             if (new_conn < 0) {
                 perror("http_server2: accept error");
-                exit(-1);
+                // exit(-1);
+                continue;
             }else{
                 //find empty space
                 int added = 0;
