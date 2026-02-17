@@ -130,10 +130,15 @@ handle_connection(int sock)
     // send file contents
     // kinda just keeps reading and sending til there aint more to read
     while ((bytes_read = fread(buf, 1, BUFSIZE, file)) > 0) {
-        if (send(sock, buf, bytes_read, 0) <= 0) {
-            perror("http_server1: send error");
-            fclose(file);
-            return -1;
+        int sent = 0;
+        while (sent < bytes_read) {
+            int res = send(sock, buf + sent, bytes_read - sent, 0);
+            if (res <= 0) {
+                perror("http_server1: send error");
+                fclose(file);
+                return -1;
+            }
+            sent += res;
         }
     }
     
@@ -166,7 +171,7 @@ main(int argc, char ** argv)
     /* initialize and make socket */
     // same as tcp_server.c
     if((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
-        perror("tcp_server: socket error");
+        perror("http_server1: socket error");
         exit(-1);
     }
 
@@ -182,7 +187,7 @@ main(int argc, char ** argv)
     /* bind listening socket */
     // same as tcp_server.c
     if (bind(sock, (struct sockaddr *)&saddr, sizeof(saddr)) < 0) {
-        perror("tcp_server: bind error");
+        perror("http_server1: bind error");
         exit(-1);
     }
 
@@ -190,7 +195,7 @@ main(int argc, char ** argv)
     // same as tcp_server.c
     // tbh im assuming we are going with 32 max connections again who knows
     if (listen(sock, 32) < 0) {
-        perror("tcp_server: listen error");
+        perror("http_server1: listen error");
         exit(-1);
     }
     int c;
@@ -200,8 +205,8 @@ main(int argc, char ** argv)
         // this is gonna be slightly different from tcp_seveer.c
         // so ig we break if < 0 instead of the while thingy
         if((c = accept(sock, NULL, NULL)) < 0) {
-            perror("tcp_server: accept error");
-            exit(-1);
+            perror("http_server1: accept error");
+            continue;
         }
         
 
