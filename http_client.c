@@ -100,6 +100,8 @@ int main(int argc, char **argv)
     if (connect(s, (struct sockaddr *)&saddr, sizeof(saddr)) < 0)
     {
         perror("tcp_client: could not connect to server");
+        close(s);
+        free(req_str);
         exit(-1);
     }
 
@@ -114,10 +116,17 @@ int main(int argc, char **argv)
     // printf("%s", req_str);
     int len = strlen(req_str);
     int res;
-    if ((res = send(s, req_str, len, 0)) <= 0)
-    {
-        perror("tcp_client: send error");
-        exit(-1);
+    int sent = 0;
+
+    while (sent < len) {
+        res = send(s, req_str + sent, len - sent, 0);
+        if (res <= 0) {
+            perror("http_client: send error");
+            close(s);
+            free(req_str);
+            exit(-1);
+        }
+        sent += res;
     }
 
     // i fear i may no longer be able to copy over code...
@@ -148,6 +157,8 @@ int main(int argc, char **argv)
     if (select_ret < 0)
     {
         perror("select error");
+        close(s);
+        free(req_str);
         exit(-1);
     }
 
@@ -172,12 +183,16 @@ int main(int argc, char **argv)
         if (res < 0)
         {
             perror("recv error");
+            close(s);
+            free(req_str);
             exit(-1);
         }
         else if (res == 0)
         {
             fprintf(stderr, "server closed connection\n");
-            break;
+            close(s);
+            free(req_str);
+            exit(-1);
         }
         // null term at edn so we can print it
         buf[res] = '\0';
@@ -197,17 +212,58 @@ int main(int argc, char **argv)
     /* print first part of response: header, error code, etc. */
     int status_code = 0;
     sscanf(headers, "HTTP/%*s %d", &status_code); // discards version & stores status code in status code
-    printf("Status Code: %d\n\n", status_code);
-    printf("%s\n", headers);
+    // printf("Status Code: %d\n\n", status_code);
+    // printf("%s\n", headers);
 
     /* second read loop -- print out the rest of the response: real web content */
     // kinda just redo and print actually web content
-    while ((res = recv(s, buf, BUFSIZE - 1, 0)) > 0)
-    {
-        buf[res] = '\0';
-        printf("%s", buf);
-    }
+    // while ((res = recv(s, buf, BUFSIZE - 1, 0)) > 0)
+    // {
+    //     buf[res] = '\0';
+    //     printf("%s", buf);
+    // }
 
-    /* close socket */
-    close(s);
+    // /* close socket */
+    // close(s);
+
+    ///
+    char *body_start = strstr(headers, "\r\n\r\n");
+    if (body_start == NULL) {
+        fprintf(stderr, "http_client: invalid HTTP response - no header delimiter\n");
+        close(s);
+        free(req_str);
+        return -1;
+    }
+    body_start += 4; // move past \r\n\r\n to start of body
+
+    if (status_code == 200) {
+        printf("%s", body_start);
+
+        while ((res = recv(s, buf, BUFSIZE - 1, 0)) > 0) {
+            buf[res] = '\0';
+            printf("%s", buf);
+        }
+        if (res < 0) {
+            perror("http_client: recv error");
+            close(s);
+            free(req_str);
+            return -1;
+        }
+
+        close(s);
+        free(req_str);
+        return 0;
+    }
+    else {
+        fprintf(stderr, "%s", headers);
+
+        while ((res = recv(s, buf, BUFSIZE - 1, 0)) > 0) {
+            buf[res] = '\0';
+            fprintf(stderr, "%s", buf);
+        }
+
+        close(s);
+        free(req_str);
+        return -1;
+    }
 }
