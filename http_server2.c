@@ -71,7 +71,7 @@ handle_connection(int sock)
         */
 
         if((len = recv(sock, buf + total_len, BUFSIZE - 1 - total_len, 0)) <= 0) {
-            perror("http_server1: recv error");
+            perror("http_server2: recv error");
             return -1;
         }
         total_len += len;
@@ -88,7 +88,7 @@ handle_connection(int sock)
     /* parse request to get file name */
     /* Assumption: this is a GET request and filename contains no spaces*/
     if (sscanf(buf, "%s %s %s", method, path, version) != 3) {
-        fprintf(stderr, "http_server1: failed to parse request\n");
+        fprintf(stderr, "http_server2: failed to parse request\n");
         return -1;
     }
 
@@ -106,7 +106,7 @@ handle_connection(int sock)
     
     // send 404 if not found
         if (send(sock, notok_response, strlen(notok_response), 0) <= 0) {
-            perror("http_server1: send error");
+            perror("http_server2: send error");
             return -1;
         }
         return 0;
@@ -124,7 +124,7 @@ handle_connection(int sock)
     sprintf(header, ok_response_f, file_size); // sprintf(destbuff, format str, size)
     // basically same as tcp  server. but we are sending header rn
     if (send(sock, header, strlen(header), 0) <= 0) {
-        perror("http_server1: send error");
+        perror("http_server2: send error");
         fclose(file);
         return -1;
     }
