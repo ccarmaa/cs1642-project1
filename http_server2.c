@@ -131,10 +131,15 @@ handle_connection(int sock)
     // send file contents
     // kinda just keeps reading and sending til there aint more to read
     while ((bytes_read = fread(buf, 1, BUFSIZE, file)) > 0) {
-        if (send(sock, buf, bytes_read, 0) <= 0) {
-            perror("http_server1: send error");
-            fclose(file);
-            return -1;
+        int sent = 0;
+        while (sent < bytes_read) {
+            int res = send(sock, buf + sent, bytes_read - sent, 0);
+            if (res <= 0) {
+                perror("http_server2: send error");
+                fclose(file);
+                return -1;
+            }
+            sent += res;
         }
     }
     
@@ -190,7 +195,7 @@ main(int argc, char ** argv)
     }
     /* connection handling loop: wait to accept connection */
 
-    int connections[32];
+    int connections[FD_SETSIZE];
     int max_fd; // for select
     int ready; // for select (how many sockets are ready)
 
@@ -224,7 +229,7 @@ main(int argc, char ** argv)
 
         if (ready < 0) {
             perror("http_server2: select error");
-            exit(-1);
+            continue;
         }
         /* process sockets that are ready:
          *     for the accept socket, add accepted connection to connections PART 1
@@ -242,14 +247,14 @@ main(int argc, char ** argv)
             }else{
                 //find empty space
                 int added = 0;
-                for(int i = 0; i < 32; i++) {
+                for(int i = 0; i < FD_SETSIZE; i++) {
                     if (connections[i] == -1) {
                         connections[i] = new_conn;
                         FD_SET(new_conn, &all_fds);
                         if (new_conn > max_fd) {
                             max_fd = new_conn;
                         }
-                        printf("New connection accepted: %d\n", new_conn);
+                        // printf("New connection accepted: %d\n", new_conn);
                         added = 1;
                         break;
                     }
@@ -263,7 +268,7 @@ main(int argc, char ** argv)
 
         // PARRT2
         // check all conn sockets
-        for(int i=0; i < 32; i++) {
+        for(int i=0; i < FD_SETSIZE; i++) {
             int conn = connections[i];
 
             if(conn == -1) {
@@ -271,7 +276,7 @@ main(int argc, char ** argv)
             }
 
             if (FD_ISSET(conn, &read_fds)) {
-                printf("Handling connection: %d\n", conn);
+                // printf("Handling connection: %d\n", conn);
                 ret = handle_connection(conn);
 
                 if(ret <0){
